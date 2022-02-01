@@ -1,6 +1,7 @@
 from PIL import Image
 import torch
 import numpy as np
+import torchvision.transforms as transforms
 
 
 def tensor_load_rgbimage(filename, size=None, scale=None, keep_asp=False):
@@ -42,3 +43,23 @@ def preprocess_batch(batch):
     batch = torch.cat((b, g, r))
     batch = batch.transpose(0, 1)
     return batch
+
+
+def get_smaller_size(height, filename):
+    img_width, img_height = Image.open(filename).size
+    width = int(img_width * height / img_height)
+    return width, height
+
+
+def load_image(filename, height=500):
+    image = Image.open(filename)
+    imsize = get_smaller_size(height, 'tmp/content.jpg')
+    transformer = transforms.Compose([
+        transforms.Resize(imsize),
+        transforms.ToTensor(),
+    ])
+    image = transformer(image).unsqueeze(0)
+    return image
+
+
+unloader = transforms.ToPILImage()

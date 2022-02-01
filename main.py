@@ -3,9 +3,10 @@ import torch
 import os
 from torch.autograd import Variable
 
-from config.config import TOKEN
-from model.network import Net
-from model.utils import tensor_save_bgrimage, preprocess_batch, tensor_load_rgbimage
+from config.config import TOKEN, MODEL
+from model.msg_net import Net
+from model.utils import tensor_save_bgrimage, preprocess_batch, tensor_load_rgbimage, load_image, unloader
+from model.nst_net import train_style_transfer, device, cnn, cnn_normalization_mean, cnn_normalization_std
 
 
 print(TOKEN)
@@ -23,6 +24,7 @@ def get_stage():
 
 
 bot = telebot.TeleBot(TOKEN)
+
 
 @bot.message_handler(commands=['start'])
 def welcome_start(message):
@@ -48,8 +50,16 @@ def handle_send_photo(message):
     if not is_files_exist():
         bot.send_message(message.chat.id, 'Download content and style images first')
         return
-    content_image, style_image = prepare_inputs()
-    get_output_image(content_image, style_image)
+    if MODEL == 'MSG':
+        content_image, style_image = prepare_inputs()
+        get_output_image(content_image, style_image)
+    elif MODEL == 'NST':
+        content_img = load_image('tmp/content.jpg').to(device)
+        style_img = load_image('tmp/style.jpg').to(device)
+        input_img = content_img.clone()
+        output = train_style_transfer(cnn, cnn_normalization_mean, cnn_normalization_std,
+                                      content_img, style_img, input_img)
+        unloader(output.squeeze(0)).save('tmp/output.jpg')
     print('Done')
     file = open('tmp/output.jpg', 'rb')
     bot.send_photo(message.chat.id, file)

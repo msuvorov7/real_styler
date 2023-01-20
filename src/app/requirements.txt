@@ -1,0 +1,5 @@
+onnxruntime~=1.13.1
+numpy~=1.23.3
+aiogram~=2.22.2
+six~=1.16.0
+Pillow~=9.0.0

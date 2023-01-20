@@ -29,6 +29,7 @@
 - Сразу используем Instance Normalization для улучшения качества, который был предложен
 в работе [Instance Normalization: The Missing Ingredient for Fast Stylization](https://arxiv.org/pdf/1607.08022.pdf)
 - Особый Upsample (чтобы не было шахматных артефактов применяем интерполяцию и конволюцию над ней)
+- Для ускорения инференса не прибегаем к нормировке входного изображения, но нормируем батчи перед VGG16Loss
 
 ![TransformNet](docs/architecture.png)
 

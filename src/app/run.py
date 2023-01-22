@@ -11,11 +11,25 @@ from io import BytesIO
 
 log = logging.getLogger(__name__)
 
+style = 'mosaic'
+
 
 async def welcome_start(message):
     """Aiogram helper handler."""
 
-    await message.answer('Hello!\nSend Photo for beginning...')
+    await message.answer('Hello!\nUse commands to set style:\n/mosaic\n/udnie\nSend Photo for beginning...')
+
+
+async def change_mosaic(message):
+    global style
+    style = 'mosaic'
+    await message.answer('Setted style mosaic')
+
+
+async def change_udnie(message):
+    global style
+    style = 'udnie'
+    await message.answer('Setted style udnie')
 
 
 async def content_handler(message: types.message):
@@ -24,7 +38,10 @@ async def content_handler(message: types.message):
     await message.photo[-1].download(destination_file=image)
     image.seek(0)
 
-    model = onnxruntime.InferenceSession('models/model_mosaic.onnx')
+    if style == 'udnie':
+        model = onnxruntime.InferenceSession('models/model_udnie.onnx')
+    else:
+        model = onnxruntime.InferenceSession('models/model_mosaic.onnx')
 
     content_image = np.asarray(Image.open(image).convert('RGB'), dtype=np.float32)
     content_image = content_image[np.newaxis, :, :, :].transpose(0, 3, 1, 2)
@@ -44,6 +61,8 @@ async def register_handlers(dp: Dispatcher):
     """Registration all handlers before processing update."""
 
     dp.register_message_handler(welcome_start, commands=['start'])
+    dp.register_message_handler(change_mosaic, commands=['mosaic'])
+    dp.register_message_handler(change_udnie, commands=['udnie'])
     dp.register_message_handler(content_handler, content_types=['photo'])
 
     log.debug('Handlers are registered.')

@@ -20,6 +20,7 @@ def create_archive(models_path: str) -> None:
     with zipfile.ZipFile('serverless_functions.zip', mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
         zf.write(models_path + 'model_mosaic.onnx', 'models/model_mosaic.onnx')
         zf.write(models_path + 'model_udnie.onnx', 'models/model_udnie.onnx')
+        zf.write(models_path + 'model_lines.onnx', 'models/model_lines.onnx')
         zf.write(fileDir + 'src/app/run.py', 'run.py')
         zf.write(fileDir + 'src/app/requirements.txt', 'requirements.txt')
 

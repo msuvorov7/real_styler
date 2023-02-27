@@ -17,7 +17,7 @@ style = 'mosaic'
 async def welcome_start(message):
     """Aiogram helper handler."""
 
-    await message.answer('Hello!\nUse commands to set style:\n/mosaic\n/udnie\nSend Photo for beginning...')
+    await message.answer('Hello!\nUse commands to set style:\n/mosaic\n/udnie\n/lines\nSend Photo for beginning...')
 
 
 async def change_mosaic(message):
@@ -32,6 +32,12 @@ async def change_udnie(message):
     await message.answer('Setted style udnie')
 
 
+async def change_lines(message):
+    global style
+    style = 'lines'
+    await message.answer('Setted style lines')
+
+
 async def content_handler(message: types.message):
     """Aiogram handler only for text messages."""
     image = BytesIO()
@@ -40,6 +46,8 @@ async def content_handler(message: types.message):
 
     if style == 'udnie':
         model = onnxruntime.InferenceSession('models/model_udnie.onnx')
+    elif style == 'lines':
+        model = onnxruntime.InferenceSession('models/model_lines.onnx')
     else:
         model = onnxruntime.InferenceSession('models/model_mosaic.onnx')
 
@@ -63,6 +71,7 @@ async def register_handlers(dp: Dispatcher):
     dp.register_message_handler(welcome_start, commands=['start'])
     dp.register_message_handler(change_mosaic, commands=['mosaic'])
     dp.register_message_handler(change_udnie, commands=['udnie'])
+    dp.register_message_handler(change_lines, commands=['lines'])
     dp.register_message_handler(content_handler, content_types=['photo'])
 
     log.debug('Handlers are registered.')

@@ -1,7 +1,6 @@
-import onnxruntime
 import numpy as np
+import onnxruntime
 from PIL import Image
-import matplotlib.pyplot as plt
 
 
 if __name__ == '__main__':
@@ -13,7 +12,3 @@ if __name__ == '__main__':
 
     result = model_output[0][0].clip(0, 255).transpose(1, 2, 0).astype('uint8')
     Image.fromarray(result).save('../../data/ann_mosaic.jpg')
-
-    # plt.imshow(result)
-    # plt.axis('off')
-    # plt.show()

@@ -8,51 +8,91 @@ from aiogram.dispatcher import Dispatcher
 from PIL import Image
 from io import BytesIO
 
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
 
 log = logging.getLogger(__name__)
 
-style = 'mosaic'
+keyboards = [
+    InlineKeyboardButton(text='mosaic', callback_data='mosaic_style'),
+    InlineKeyboardButton(text='udnie', callback_data='udnie_style'),
+    InlineKeyboardButton(text='lines', callback_data='lines_style'),
+]
+
+style_menu = InlineKeyboardMarkup(row_width=3)
+style_menu.add(*keyboards)
+
+
+class UploadPhotoForStyle:
+    def __init__(self):
+        self.state = None
+
+    def set_state(self, name: str):
+        self.state = name
+
+    def get_state(self):
+        return self.state
+
+
+style_state = UploadPhotoForStyle()
 
 
 async def welcome_start(message):
-    """Aiogram helper handler."""
-
-    await message.answer('Hello!\nUse commands to set style:\n/mosaic\n/udnie\n/lines\nSend Photo for beginning...')
+    await message.answer('Hello!\nChoose style:', reply_markup=style_menu)
 
 
-async def change_mosaic(message):
-    global style
-    style = 'mosaic'
-    await message.answer('Setted style mosaic')
+async def process_mosaic_style(callback_query: types.CallbackQuery):
+    style_state.set_state('mosaic')
+    await callback_query.message.answer('Activated mosaic style\nSend photo')
 
 
-async def change_udnie(message):
-    global style
-    style = 'udnie'
-    await message.answer('Setted style udnie')
+async def process_udnie_style(callback_query: types.CallbackQuery):
+    style_state.set_state('udnie')
+    await callback_query.message.answer('Activated udnie style\nSend photo')
 
 
-async def change_lines(message):
-    global style
-    style = 'lines'
-    await message.answer('Setted style lines')
+async def process_lines_style(callback_query: types.CallbackQuery):
+    style_state.set_state('lines')
+    await callback_query.message.answer('Activated lines style\nSend photo')
 
 
-async def content_handler(message: types.message):
-    """Aiogram handler only for text messages."""
+async def process_mosaic_photo(message: types.Message):
     image = BytesIO()
     await message.photo[-1].download(destination_file=image)
     image.seek(0)
 
-    if style == 'udnie':
-        model = onnxruntime.InferenceSession('models/model_udnie.onnx')
-    elif style == 'lines':
-        model = onnxruntime.InferenceSession('models/model_lines.onnx')
-    else:
-        model = onnxruntime.InferenceSession('models/model_mosaic.onnx')
+    model = onnxruntime.InferenceSession('models/model_mosaic.onnx')
+    result_bytes = get_styled_photo(image, model)
 
+    await message.answer_photo(photo=result_bytes)
+
+
+async def process_udnie_photo(message: types.Message):
+    image = BytesIO()
+    await message.photo[-1].download(destination_file=image)
+    image.seek(0)
+
+    model = onnxruntime.InferenceSession('models/model_udnie.onnx')
+    result_bytes = get_styled_photo(image, model)
+
+    await message.answer_photo(photo=result_bytes)
+
+
+async def process_lines_photo(message: types.Message):
+    image = BytesIO()
+    await message.photo[-1].download(destination_file=image)
+    image.seek(0)
+
+    model = onnxruntime.InferenceSession('models/model_lines.onnx')
+    result_bytes = get_styled_photo(image, model)
+
+    await message.answer_photo(photo=result_bytes)
+
+
+def get_styled_photo(image, model):
     content_image = np.asarray(Image.open(image).convert('RGB'), dtype=np.float32)
     content_image = content_image[np.newaxis, :, :, :].transpose(0, 3, 1, 2)
+
     model_input = {model.get_inputs()[0].name: content_image}
     model_output = model.run(None, model_input)
 
@@ -61,18 +101,23 @@ async def content_handler(message: types.message):
     result.save(result_bytes, 'jpeg')
     result_bytes.seek(0)
 
-    await message.answer_photo(result_bytes)
+    return result_bytes
 
 
 # Functions for Yandex.Cloud
 async def register_handlers(dp: Dispatcher):
     """Registration all handlers before processing update."""
 
+    dp.register_callback_query_handler(process_mosaic_style, lambda item: item.data == 'mosaic_style')
+    dp.register_callback_query_handler(process_udnie_style, lambda item: item.data == 'udnie_style')
+    dp.register_callback_query_handler(process_lines_style, lambda item: item.data == 'lines_style')
+
+    log.debug('Callback queries are registered.')
+
     dp.register_message_handler(welcome_start, commands=['start'])
-    dp.register_message_handler(change_mosaic, commands=['mosaic'])
-    dp.register_message_handler(change_udnie, commands=['udnie'])
-    dp.register_message_handler(change_lines, commands=['lines'])
-    dp.register_message_handler(content_handler, content_types=['photo'])
+    dp.register_message_handler(process_mosaic_photo, lambda item: style_state.get_state() == 'mosaic', content_types=['photo'])
+    dp.register_message_handler(process_udnie_photo, lambda item: style_state.get_state() == 'udnie', content_types=['photo'])
+    dp.register_message_handler(process_lines_photo, lambda item: style_state.get_state() == 'lines', content_types=['photo'])
 
     log.debug('Handlers are registered.')
 

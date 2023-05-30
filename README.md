@@ -34,9 +34,10 @@
 ![TransformNet](docs/architecture.png)
 
 ## Результаты
-|   Input                        |  Style                      |  Result                                    |
-|--------------------------------|-----------------------------|--------------------------------------------|
-|![ann](data/ann.jpg)            |  ![mosaic](data/mosaic.jpg) | ![ann_mosaic](data/ann_mosaic.jpg)         |
-|![princess](data/princess.jpg)  |  ![udnie](data/udnie.jpg)   | ![princess_udnie](data/princess_udnie.jpg) |
-|![veter](data/veter.jpg)        |  ![lines](data/lines.jpg)   | ![veter_lines](data/veter_lines.jpg)       |
+|   Input                           |  Style                      |  Result                                        |
+|-----------------------------------|-----------------------------|------------------------------------------------|
+|![ann](data/ann.jpg)               |  ![mosaic](data/mosaic.jpg) | ![ann_mosaic](data/ann_mosaic.jpg)             |
+|![princess](data/princess.jpg)     |  ![udnie](data/udnie.jpg)   | ![princess_udnie](data/princess_udnie.jpg)     |
+|![veter](data/veter.jpg)           |  ![lines](data/lines.jpg)   | ![veter_lines](data/veter_lines.jpg)           |
+|![lighthouse](data/lighthouse.jpg) |  ![candy](data/candy.jpg)   | ![lighthouse_candy](data/lighthouse_candy.jpg) |
 

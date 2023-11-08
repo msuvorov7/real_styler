@@ -40,4 +40,5 @@
 |![princess](data/princess.jpg)     |  ![udnie](data/udnie.jpg)   | ![princess_udnie](data/princess_udnie.jpg)     |
 |![veter](data/veter.jpg)           |  ![lines](data/lines.jpg)   | ![veter_lines](data/veter_lines.jpg)           |
 |![lighthouse](data/lighthouse.jpg) |  ![candy](data/candy.jpg)   | ![lighthouse_candy](data/lighthouse_candy.jpg) |
+|![stones](data/stones.jpg)         |  ![scream](data/scream.jpg) | ![lighthouse_candy](data/stones_scream.jpg)    |
 

@@ -75,10 +75,8 @@ def train(train_loader: DataLoader,
                 print(mesg)
 
 
-def fit(train_loader, style_img, content_weight, style_weight):
+def fit(train_loader, style_img, content_weight: int, style_weight: int, num_epochs: int):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-    num_epochs = 12
 
     # основная сеть и оптимайзер
     transformer = TransformNet().to(device)
@@ -123,8 +121,8 @@ if __name__ == '__main__':
     args_parser.add_argument('--data_dir', default='../../data/Images', dest='data_dir')
     args_parser.add_argument('--style_path', default='../../data/mosaic.jpg', dest='style_path')
     args_parser.add_argument('--content_weight', default=1e5, type=int, dest='content_weight')
-    args_parser.add_argument('--style_weight', default=1e10, type=int, dest='style_weight')
-    args_parser.add_argument('--num_epochs', default=3, type=int, dest='num_epochs')
+    args_parser.add_argument('--style_weight', default=2e10, type=int, dest='style_weight')
+    args_parser.add_argument('--num_epochs', default=12, type=int, dest='num_epochs')
     args = args_parser.parse_args()
 
     batch_size = 16
@@ -135,4 +133,10 @@ if __name__ == '__main__':
     style_img = style_transform(style_img)
     style_img = style_img.repeat(batch_size, 1, 1, 1)
 
-    fit(train_loader, style_img, args.content_weight, args.style_weight)
+    fit(
+        train_loader,
+        style_img,
+        args.content_weight,
+        args.style_weight,
+        args.num_epochs,
+    )

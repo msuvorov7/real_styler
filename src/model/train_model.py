@@ -7,10 +7,24 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import torch.nn as nn
 
+import sys
+import os
+
+from clearml import Task
+from clearml import Logger
+
+sys.path.insert(0, os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+))
+
 from src.features.dataset import FlickrDataset, content_transform, style_transform
 from src.model.model import TransformNet
 from src.model.vgg_loss import VGG16Loss
 from src.utils.tools import normalize_for_vgg, gram_matrix_batch
+
+task = Task.init('styler', 'PyTorch training: StyleTransfer', tags=['torch'])
+task.execute_remotely(queue_name="queue-gpu", exit_process=True)
+log = Logger.current_logger()
 
 
 def train(train_loader: DataLoader,
@@ -66,7 +80,7 @@ def train(train_loader: DataLoader,
             agg_content_loss += content_loss.item()
             agg_style_loss += style_loss.item()
 
-            if (batch_id + 1) % 40 == 0:
+            if (batch_id + 1) % 100 == 0:
                 mesg = "{} Epoch {}: content: {:.6f} style: {:.6f} total: {:.6f}".format(
                     time.ctime(), epoch + 1,
                                   agg_content_loss / (batch_id + 1),
@@ -74,12 +88,17 @@ def train(train_loader: DataLoader,
                                   (agg_content_loss + agg_style_loss) / (batch_id + 1))
                 print(mesg)
 
+        log.report_scalar(
+            title='Content Loss', series='series', value=agg_content_loss / (batch_id + 1), iteration=epoch
+        )
+        log.report_scalar(
+            title='Style Loss', series='series', value=agg_style_loss / (batch_id + 1), iteration=epoch
+        )
 
-def fit(train_loader, style_img, content_weight, style_weight):
+
+def fit(train_loader, style_img, content_weight: int, style_weight: int, num_epochs: int):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-    num_epochs = 12
-
+    print(f'device: {device}')
     # основная сеть и оптимайзер
     transformer = TransformNet().to(device)
     optimizer = torch.optim.Adam(transformer.parameters(), 1e-3)
@@ -108,31 +127,41 @@ def fit(train_loader, style_img, content_weight, style_weight):
           num_epochs=num_epochs,
           device=device)
 
-    torch.save(transformer.eval(), '../../models/model_mosaic.torch')
-    dummy_input = torch.randn(1, 3, 256, 256, dtype=torch.uint8)
+    torch.save(transformer.eval(), 'models/model_wave.torch')
+    dummy_input = torch.randn(1, 3, 256, 256)
     torch.onnx.export(
-        transformer.eval(),
+        transformer.to('cpu').eval(),
         dummy_input,
-        '../../models/model_mosaic.onnx',
+        'models/model_wave.onnx',
         input_names=['input'],
         dynamic_axes={'input': {0: 'batch_size', 2: 'width', 3: 'height'}})
+
+    # task.upload_artifact(name='model_wave.onnx', artifact_object='models/model_wave.onnx')
 
 
 if __name__ == '__main__':
     args_parser = argparse.ArgumentParser()
     args_parser.add_argument('--data_dir', default='../../data/Images', dest='data_dir')
-    args_parser.add_argument('--style_path', default='../../data/mosaic.jpg', dest='style_path')
+    args_parser.add_argument('--style_path', default='../../data/big_wave.jpg', dest='style_path')
     args_parser.add_argument('--content_weight', default=1e5, type=int, dest='content_weight')
-    args_parser.add_argument('--style_weight', default=1e10, type=int, dest='style_weight')
-    args_parser.add_argument('--num_epochs', default=3, type=int, dest='num_epochs')
+    args_parser.add_argument('--style_weight', default=2e10, type=int, dest='style_weight')
+    args_parser.add_argument('--num_epochs', default=12, type=int, dest='num_epochs')
     args = args_parser.parse_args()
 
     batch_size = 16
     train_dataset = FlickrDataset(args.data_dir, content_transform)
+    print(len(train_dataset))
+    print(os.listdir('data'))
     train_loader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
 
     style_img = Image.open(args.style_path).convert('RGB')
     style_img = style_transform(style_img)
     style_img = style_img.repeat(batch_size, 1, 1, 1)
 
-    fit(train_loader, style_img, args.content_weight, args.style_weight)
+    fit(
+        train_loader,
+        style_img,
+        args.content_weight,
+        args.style_weight,
+        args.num_epochs,
+    )

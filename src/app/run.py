@@ -20,6 +20,7 @@ keyboards = [
     InlineKeyboardButton(text='candy', callback_data='candy_style'),
     InlineKeyboardButton(text='scream', callback_data='scream_style'),
     InlineKeyboardButton(text='night', callback_data='night_style'),
+    InlineKeyboardButton(text='wave', callback_data='wave_style'),
 ]
 
 style_menu = InlineKeyboardMarkup(row_width=3)
@@ -72,6 +73,11 @@ async def process_scream_style(callback_query: types.CallbackQuery):
 async def process_night_style(callback_query: types.CallbackQuery):
     style_state.set_state('night')
     await callback_query.message.answer('Activated night style\nSend photo')
+
+
+async def process_wave_style(callback_query: types.CallbackQuery):
+    style_state.set_state('wave')
+    await callback_query.message.answer('Activated wave style\nSend photo')
 
 
 async def process_mosaic_photo(message: types.Message):
@@ -140,6 +146,17 @@ async def process_night_photo(message: types.Message):
     await message.answer_photo(photo=result_bytes)
 
 
+async def process_wave_photo(message: types.Message):
+    image = BytesIO()
+    await message.photo[-1].download(destination_file=image)
+    image.seek(0)
+
+    model = onnxruntime.InferenceSession('models/model_wave.onnx')
+    result_bytes = get_styled_photo(image, model)
+
+    await message.answer_photo(photo=result_bytes)
+
+
 def get_styled_photo(image, model):
     content_image = np.asarray(Image.open(image).convert('RGB'), dtype=np.float32)
     content_image = content_image[np.newaxis, :, :, :].transpose(0, 3, 1, 2)
@@ -165,6 +182,7 @@ async def register_handlers(dp: Dispatcher):
     dp.register_callback_query_handler(process_candy_style, lambda item: item.data == 'candy_style')
     dp.register_callback_query_handler(process_scream_style, lambda item: item.data == 'scream_style')
     dp.register_callback_query_handler(process_night_style, lambda item: item.data == 'night_style')
+    dp.register_callback_query_handler(process_wave_style, lambda item: item.data == 'wave_style')
 
     log.debug('Callback queries are registered.')
 
@@ -175,6 +193,7 @@ async def register_handlers(dp: Dispatcher):
     dp.register_message_handler(process_candy_photo, lambda item: style_state.get_state() == 'candy', content_types=['photo'])
     dp.register_message_handler(process_scream_photo, lambda item: style_state.get_state() == 'scream', content_types=['photo'])
     dp.register_message_handler(process_night_photo, lambda item: style_state.get_state() == 'night', content_types=['photo'])
+    dp.register_message_handler(process_wave_photo, lambda item: style_state.get_state() == 'wave', content_types=['photo'])
 
     log.debug('Handlers are registered.')
 

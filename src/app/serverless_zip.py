@@ -23,6 +23,7 @@ def create_archive(models_path: str) -> None:
         zf.write(models_path + 'model_lines.onnx', 'models/model_lines.onnx')
         zf.write(models_path + 'model_candy.onnx', 'models/model_candy.onnx')
         zf.write(models_path + 'model_scream.onnx', 'models/model_scream.onnx')
+        zf.write(models_path + 'model_night.onnx', 'models/model_night.onnx')
         zf.write(fileDir + 'src/app/run.py', 'run.py')
         zf.write(fileDir + 'src/app/requirements.txt', 'requirements.txt')
 

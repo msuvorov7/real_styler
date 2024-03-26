@@ -7,14 +7,6 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import torch.nn as nn
 
-import sys
-import os
-
-
-sys.path.insert(0, os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-))
-
 from src.features.dataset import FlickrDataset, content_transform, style_transform
 from src.model.model import TransformNet
 from src.model.vgg_loss import VGG16Loss
@@ -74,7 +66,7 @@ def train(train_loader: DataLoader,
             agg_content_loss += content_loss.item()
             agg_style_loss += style_loss.item()
 
-            if (batch_id + 1) % 100 == 0:
+            if (batch_id + 1) % 40 == 0:
                 mesg = "{} Epoch {}: content: {:.6f} style: {:.6f} total: {:.6f}".format(
                     time.ctime(), epoch + 1,
                                   agg_content_loss / (batch_id + 1),
@@ -85,7 +77,7 @@ def train(train_loader: DataLoader,
 
 def fit(train_loader, style_img, content_weight: int, style_weight: int, num_epochs: int):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print(f'device: {device}')
+
     # основная сеть и оптимайзер
     transformer = TransformNet().to(device)
     optimizer = torch.optim.Adam(transformer.parameters(), 1e-3)
@@ -114,12 +106,12 @@ def fit(train_loader, style_img, content_weight: int, style_weight: int, num_epo
           num_epochs=num_epochs,
           device=device)
 
-    torch.save(transformer.eval(), 'models/model_wave.torch')
-    dummy_input = torch.randn(1, 3, 256, 256)
+    torch.save(transformer.eval(), '../../models/model_mosaic.torch')
+    dummy_input = torch.randn(1, 3, 256, 256, dtype=torch.uint8)
     torch.onnx.export(
         transformer.to('cpu').eval(),
         dummy_input,
-        'models/model_wave.onnx',
+        '../../models/model_mosaic.onnx',
         input_names=['input'],
         dynamic_axes={'input': {0: 'batch_size', 2: 'width', 3: 'height'}})
 
@@ -127,7 +119,7 @@ def fit(train_loader, style_img, content_weight: int, style_weight: int, num_epo
 if __name__ == '__main__':
     args_parser = argparse.ArgumentParser()
     args_parser.add_argument('--data_dir', default='../../data/Images', dest='data_dir')
-    args_parser.add_argument('--style_path', default='../../data/big_wave.jpg', dest='style_path')
+    args_parser.add_argument('--style_path', default='../../data/mosaic.jpg', dest='style_path')
     args_parser.add_argument('--content_weight', default=1e5, type=int, dest='content_weight')
     args_parser.add_argument('--style_weight', default=2e10, type=int, dest='style_weight')
     args_parser.add_argument('--num_epochs', default=12, type=int, dest='num_epochs')
@@ -135,8 +127,6 @@ if __name__ == '__main__':
 
     batch_size = 16
     train_dataset = FlickrDataset(args.data_dir, content_transform)
-    print(len(train_dataset))
-
     train_loader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
 
     style_img = Image.open(args.style_path).convert('RGB')

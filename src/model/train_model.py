@@ -10,8 +10,6 @@ import torch.nn as nn
 import sys
 import os
 
-from clearml import Task
-from clearml import Logger
 
 sys.path.insert(0, os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -21,10 +19,6 @@ from src.features.dataset import FlickrDataset, content_transform, style_transfo
 from src.model.model import TransformNet
 from src.model.vgg_loss import VGG16Loss
 from src.utils.tools import normalize_for_vgg, gram_matrix_batch
-
-task = Task.init('styler', 'PyTorch training: StyleTransfer', tags=['torch'])
-task.execute_remotely(queue_name="queue-gpu", exit_process=True)
-log = Logger.current_logger()
 
 
 def train(train_loader: DataLoader,
@@ -88,13 +82,6 @@ def train(train_loader: DataLoader,
                                   (agg_content_loss + agg_style_loss) / (batch_id + 1))
                 print(mesg)
 
-        log.report_scalar(
-            title='Content Loss', series='series', value=agg_content_loss / (batch_id + 1), iteration=epoch
-        )
-        log.report_scalar(
-            title='Style Loss', series='series', value=agg_style_loss / (batch_id + 1), iteration=epoch
-        )
-
 
 def fit(train_loader, style_img, content_weight: int, style_weight: int, num_epochs: int):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -136,8 +123,6 @@ def fit(train_loader, style_img, content_weight: int, style_weight: int, num_epo
         input_names=['input'],
         dynamic_axes={'input': {0: 'batch_size', 2: 'width', 3: 'height'}})
 
-    # task.upload_artifact(name='model_wave.onnx', artifact_object='models/model_wave.onnx')
-
 
 if __name__ == '__main__':
     args_parser = argparse.ArgumentParser()
@@ -151,7 +136,7 @@ if __name__ == '__main__':
     batch_size = 16
     train_dataset = FlickrDataset(args.data_dir, content_transform)
     print(len(train_dataset))
-    print(os.listdir('data'))
+
     train_loader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True, shuffle=True)
 
     style_img = Image.open(args.style_path).convert('RGB')

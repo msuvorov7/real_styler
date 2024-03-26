@@ -109,7 +109,7 @@ def fit(train_loader, style_img, content_weight: int, style_weight: int, num_epo
     torch.save(transformer.eval(), '../../models/model_mosaic.torch')
     dummy_input = torch.randn(1, 3, 256, 256, dtype=torch.uint8)
     torch.onnx.export(
-        transformer.eval(),
+        transformer.to('cpu').eval(),
         dummy_input,
         '../../models/model_mosaic.onnx',
         input_names=['input'],

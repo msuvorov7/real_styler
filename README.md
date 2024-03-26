@@ -42,4 +42,6 @@
 | ![lighthouse](data/lighthouse.jpg) |  ![candy](data/candy.jpg)   | ![lighthouse_candy](data/lighthouse_candy.jpg) |
 | ![stones](data/stones.jpg)         |  ![scream](data/scream.jpg) | ![lighthouse_candy](data/stones_scream.jpg)    |
 | ![sea](data/sea.jpg)               |  ![night](data/night.jpg)   | ![sea_night](data/sea_night.jpg)               |
+| ![all](data/all.jpg)               |  ![wave](data/big_wave.jpg) | ![all_wave](data/all_wave.jpg)                 |
+
 

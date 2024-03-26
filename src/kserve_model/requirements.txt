@@ -1,0 +1,4 @@
+onnxruntime
+kserve
+pillow
+numpy

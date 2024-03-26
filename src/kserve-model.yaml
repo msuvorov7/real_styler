@@ -1,0 +1,11 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: kserve-model-metric
+  annotations:
+    serving.kserve.io/enable-prometheus-scraping: "true"
+spec:
+  predictor:
+    containers:
+      - name: kserve-container
+        image: msuvorov7/kserve-model:v1

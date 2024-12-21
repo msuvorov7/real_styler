@@ -46,7 +46,7 @@ if __name__ == '__main__':
         # logger=logger,
         # callbacks=[checkpoint_callback, ],
         max_epochs=args.num_epochs,
-        accumulate_grad_batches=64,
+        accumulate_grad_batches=1,
         precision="16-mixed",
         log_every_n_steps=1,
         enable_checkpointing=True,

@@ -11,7 +11,7 @@ class FlickrDataset(Dataset):
         self.transform = transform
 
     def __getitem__(self, index):
-        image = Image.open(self.filenames[index])
+        image = Image.open(self.filenames[index]).convert('RGB')
         return self.transform(image)
 
     def __len__(self):

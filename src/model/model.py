@@ -1,4 +1,9 @@
+import torch
 import torch.nn as nn
+import pytorch_lightning as pl
+
+from src.model.vgg_loss import VGG16Loss
+from src.utils.tools import normalize_for_vgg, gram_matrix_batch
 
 
 class ConvBlock(nn.Module):
@@ -94,3 +99,88 @@ class TransformNet(nn.Module):
         decoded = self.decoder(residual)
         return decoded
 
+
+
+class TransformNetLightning(pl.LightningModule):
+    def __init__(self, model, criterion):
+        super().__init__()
+
+        self.model = model
+        self.criterion = criterion
+
+        self.save_hyperparameters(ignore=['model', 'criterion'])
+
+    def forward(self, x):
+        return self.model(x)
+    
+    def evaluate(self, batch):
+        output = self.model(batch)
+        
+        # eval loss
+        loss = self.criterion(
+            x=batch,
+            y=output,
+        )
+
+        return loss
+    
+    def training_step(self, batch, batch_idx):
+        train_loss = self.evaluate(batch)
+        self.log("train_loss", train_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        return train_loss
+    
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.model.parameters(), 1e-3)
+        # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        #     optimizer,
+        #     T_max=int(len(train_dataset) / batch_size + 1) * num_epochs,
+        # )
+        return optimizer
+    
+
+class StyleLoss(nn.Module):
+    def __init__(
+            self,
+            content_weight,
+            style_weight,
+            style_img,
+            device,
+        ):
+        super().__init__()
+        self.content_weight = content_weight
+        self.style_weight = style_weight
+        
+        self.loss = None
+        self.vgg = VGG16Loss().to(device)
+        self.mse_criterion = nn.MSELoss()
+
+        features_style = self.vgg(normalize_for_vgg(style_img.to(device)))
+        self.gram_style = [gram_matrix_batch(f) for f in features_style]
+
+    def forward(self, x, y):
+        n_batch = len(x)
+
+        # теперь делаем нормализацию для vgg
+        x = normalize_for_vgg(x)
+        y = normalize_for_vgg(y)
+
+        features_y = self.vgg(y)  # представления для преобразованного x
+        features_x = self.vgg(x)  # представления для самого x
+    
+        # представление контента с одной фича мапы
+        content_loss = self.content_weight * self.mse_criterion(features_y[1], features_x[1])
+
+        # для стиля со всех 4х
+        style_loss = 0.0
+        for ft_y, gm_s in zip(features_y, self.gram_style):
+            gm_y = gram_matrix_batch(ft_y)
+            style_loss += self.mse_criterion(gm_y, gm_s[:n_batch, :, :])
+
+        style_loss *= self.style_weight
+
+        self.loss = content_loss + style_loss
+        return self.loss
+
+    def backward(self, retain_graph=True):
+        self.loss.backward(retain_graph=retain_graph)
+        return self.loss
